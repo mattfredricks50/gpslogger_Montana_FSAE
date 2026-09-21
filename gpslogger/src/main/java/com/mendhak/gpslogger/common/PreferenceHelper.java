@@ -590,6 +590,44 @@ public class PreferenceHelper {
         prefs.edit().putBoolean(PreferenceNames.LOG_TO_CSV, enabled).apply();
     }
 
+    /**
+     * Whether to write the FSAE PlotJuggler streams (.gps, .acc, .gyr, .meta) alongside the location files
+     */
+    @ProfilePreference(name=PreferenceNames.LOG_FSAE_STREAMS)
+    public boolean shouldLogFsaeStreams() {
+        return prefs.getBoolean(PreferenceNames.LOG_FSAE_STREAMS, false);
+    }
+
+    public void setShouldLogFsaeStreams(boolean enabled) {
+        prefs.edit().putBoolean(PreferenceNames.LOG_FSAE_STREAMS, enabled).apply();
+    }
+
+    @ProfilePreference(name=PreferenceNames.LOG_TO_IMU_RATE_HZ)
+    public int getImuRateHz() {
+        return Strings.toInt(prefs.getString(PreferenceNames.LOG_TO_IMU_RATE_HZ, "200"), 200);
+    }
+
+    public void setImuRateHz(String rateHz) {
+        prefs.edit().putString(PreferenceNames.LOG_TO_IMU_RATE_HZ, rateHz).apply();
+    }
+
+    /**
+     * Start a new set of log files every N minutes (0 = off). The finished files are auto-sent
+     * when the chunk closes. Takes precedence over the new file creation mode.
+     */
+    @ProfilePreference(name=PreferenceNames.NEW_FILE_CHUNK_MINUTES)
+    public int getNewFileChunkMinutes() {
+        return Strings.toInt(prefs.getString(PreferenceNames.NEW_FILE_CHUNK_MINUTES, "0"), 0);
+    }
+
+    public void setNewFileChunkMinutes(String minutes) {
+        prefs.edit().putString(PreferenceNames.NEW_FILE_CHUNK_MINUTES, minutes).apply();
+    }
+
+    public boolean shouldCreateNewFileInChunks() {
+        return getNewFileChunkMinutes() > 0;
+    }
+
     @ProfilePreference(name=PreferenceNames.LOG_TO_CSV_DELIMITER)
     public String getCSVDelimiter() {
         return prefs.getString(PreferenceNames.LOG_TO_CSV_DELIMITER, ",");

@@ -58,6 +58,35 @@ public class Session {
     }
 
 
+    /**
+     * elapsedRealtimeNanos at the start of the FSAE logging session; t=0 for every stream file.
+     * Persisted so time stays continuous across chunks and service restarts.
+     */
+    public long getFsaeSessionStartNs() {
+        return Long.parseLong(get("fsaeSessionStartNs", "0"));
+    }
+
+    public long getFsaeSessionStartUtcMs() {
+        return Long.parseLong(get("fsaeSessionStartUtcMs", "0"));
+    }
+
+    public void setFsaeSessionStart(long elapsedRealtimeNs, long utcMs) {
+        set("fsaeSessionStartNs", String.valueOf(elapsedRealtimeNs));
+        set("fsaeSessionStartUtcMs", String.valueOf(utcMs));
+        set("fsaeCalibration", "");
+    }
+
+    /**
+     * Stationary IMU calibration for the current FSAE session, as JSON; empty until measured.
+     */
+    public String getFsaeCalibration() {
+        return get("fsaeCalibration", "");
+    }
+
+    public void setFsaeCalibration(String calibrationJson) {
+        set("fsaeCalibration", calibrationJson);
+    }
+
     public boolean isSinglePointMode() {
         return Boolean.valueOf(get("isSinglePointMode", "false"));
     }

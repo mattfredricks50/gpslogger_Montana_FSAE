@@ -112,3 +112,5 @@ ajcore.*
 vagrant
 
 _site
+# Google Cloud OAuth client downloads
+client_secret_*.json

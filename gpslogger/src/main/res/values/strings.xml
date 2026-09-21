@@ -540,4 +540,11 @@
     <string name="dawarich_baseUrl_not_set_msg">Please set the Dawarich base-URL and try again</string>
     <string name="dawarich_apiKey_not_set_title">API-key not set</string>
     <string name="dawarich_apiKey_not_set_msg">Please set the Dawarich API-key and try again</string>
+    <!-- FSAE fork -->
+    <string name="fsae_category_title" translatable="false">FSAE datalogging</string>
+    <string name="log_fsae_streams_title" translatable="false">Log GPS + IMU streams</string>
+    <string name="log_fsae_streams_summary" translatable="false">Writes .gps, .acc (accelerometer), .gyr (gyroscope) and .meta files for PlotJuggler, all on one session clock. Keeps the CPU awake while logging.</string>
+    <string name="log_imu_rate_title" translatable="false">IMU sample rate</string>
+    <string name="new_file_chunk_title" translatable="false">New file every</string>
+    <string name="upload_chunk_now" translatable="false">Upload now</string>
 </resources>

@@ -91,6 +91,15 @@ public class Files {
             return "application/vnd.geo+json";
         }
 
+        if (fileName.endsWith(".gps") || fileName.endsWith(".acc") || fileName.endsWith(".gyr") || fileName.endsWith(".ecu")) {
+            // FSAE streams are plain CSV; not the csv spreadsheet type, or Drive converts them to Sheets
+            return "text/csv";
+        }
+
+        if (fileName.endsWith(".meta")) {
+            return "application/json";
+        }
+
         if (fileName.endsWith("csv")){
             return "application/vnd.google-apps.spreadsheet";
         }

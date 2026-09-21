@@ -3,6 +3,7 @@ package com.mendhak.gpslogger.senders.googledrive;
 import android.content.Context;
 import android.net.Uri;
 
+import com.mendhak.gpslogger.BuildConfig;
 import com.mendhak.gpslogger.common.PreferenceHelper;
 import com.mendhak.gpslogger.common.Strings;
 import com.mendhak.gpslogger.common.Systems;
@@ -32,15 +33,16 @@ public class GoogleDriveManager extends FileSender {
     }
 
     public static String getGoogleDriveApplicationClientID() {
-        //OAuth Client for F-Droid release key
-        return "889382808911-scco623dhspjbf5guflmg68f61jl1na3.apps.googleusercontent.com";
+        //FSAE OAuth Android client: package com.fsae.logger.debug + local debug key SHA-1
+        return "503487286580-ebcju3io50bod89v5ob6sokdjlegt7rd.apps.googleusercontent.com";
         // The Client ID doesn't matter too much, it needs to exist, but for verification what Android
         // does is match by SHA1 signing key + package name.
     }
 
     public static String getGoogleDriveApplicationOauth2Redirect() {
-        //Needs to match in androidmanifest.xml
-        return "com.mendhak.gpslogger:/oauth2googledrive";
+        //Needs to match in androidmanifest.xml. Google requires the scheme to be the client's
+        //package name, which differs between debug (.debug suffix) and release builds.
+        return BuildConfig.APPLICATION_ID + ":/oauth2googledrive";
     }
 
     public static String[] getGoogleDriveApplicationScopes() {

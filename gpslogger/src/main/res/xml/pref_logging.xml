@@ -55,6 +55,38 @@
         app:iconSpaceReserved="false" />
 
     <PreferenceCategory
+        android:title="@string/fsae_category_title"
+        app:iconSpaceReserved="false">
+
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="log_fsae_streams"
+            android:summary="@string/log_fsae_streams_summary"
+            android:title="@string/log_fsae_streams_title"
+            app:iconSpaceReserved="false" />
+
+        <ListPreference
+            android:defaultValue="200"
+            android:dependency="log_fsae_streams"
+            android:entries="@array/imu_rate_entries"
+            android:entryValues="@array/imu_rate_values"
+            android:key="log_imu_rate_hz"
+            android:title="@string/log_imu_rate_title"
+            app:iconSpaceReserved="false"
+            app:useSimpleSummaryProvider="true" />
+
+        <ListPreference
+            android:defaultValue="0"
+            android:entries="@array/chunk_minutes_entries"
+            android:entryValues="@array/chunk_minutes_values"
+            android:key="new_file_chunk_minutes"
+            android:title="@string/new_file_chunk_title"
+            app:iconSpaceReserved="false"
+            app:useSimpleSummaryProvider="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:title="@string/pref_filedetails_title"
         app:iconSpaceReserved="false">
 

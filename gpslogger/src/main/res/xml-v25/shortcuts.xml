@@ -10,7 +10,7 @@
         android:shortcutDisabledMessage="@string/shortcut_start">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="com.mendhak.gpslogger"
+            android:targetPackage="com.fsae.logger"
             android:targetClass="com.mendhak.gpslogger.shortcuts.ShortcutStart" />
         <!-- If your shortcut is associated with multiple intents, include them
              here. The last intent in the list determines what the user sees when
@@ -27,7 +27,7 @@
         android:shortcutDisabledMessage="@string/shortcut_stop">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="com.mendhak.gpslogger"
+            android:targetPackage="com.fsae.logger"
             android:targetClass="com.mendhak.gpslogger.shortcuts.ShortcutStop" />
         <!-- If your shortcut is associated with multiple intents, include them
              here. The last intent in the list determines what the user sees when
@@ -43,7 +43,7 @@
         android:shortcutDisabledMessage="@string/menu_annotate">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="com.mendhak.gpslogger"
+            android:targetPackage="com.fsae.logger"
             android:targetClass="com.mendhak.gpslogger.NotificationAnnotationActivity" />
         <!-- If your shortcut is associated with multiple intents, include them
              here. The last intent in the list determines what the user sees when

@@ -15,7 +15,6 @@ import com.mendhak.gpslogger.common.Systems;
 import com.mendhak.gpslogger.common.events.UploadEvents;
 import com.mendhak.gpslogger.common.slf4j.Logs;
 import com.mendhak.gpslogger.loggers.Files;
-import com.mendhak.gpslogger.loggers.Streams;
 
 import net.openid.appauth.AuthState;
 import net.openid.appauth.AuthorizationException;
@@ -25,7 +24,6 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.net.URLEncoder;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -233,7 +231,6 @@ public class GoogleDriveWorker extends Worker {
     }
 
     private String updateFileContents(String accessToken, String gpxFileId, File fileToUpload) throws Exception {
-        FileInputStream fis = new FileInputStream(fileToUpload);
         String fileId = null;
 
         String fileUpdateUrl = "https://www.googleapis.com/upload/drive/v3/files/" + gpxFileId + "?uploadType=media";
@@ -242,7 +239,8 @@ public class GoogleDriveWorker extends Worker {
         Request.Builder requestBuilder = new Request.Builder().url(fileUpdateUrl);
 
         requestBuilder.addHeader("Authorization", "Bearer " + accessToken);
-        RequestBody body = RequestBody.create(MediaType.parse(Files.getMimeTypeFromFileName(fileToUpload.getName())), Streams.getByteArrayFromInputStream(fis));
+        // Stream from disk rather than reading the whole file into memory; IMU logs are large.
+        RequestBody body = RequestBody.create(MediaType.parse(Files.getMimeTypeFromFileName(fileToUpload.getName())), fileToUpload);
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
             requestBuilder.addHeader("X-HTTP-Method-Override", "PATCH");
         }

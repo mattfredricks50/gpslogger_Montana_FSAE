@@ -49,6 +49,7 @@ import com.mendhak.gpslogger.common.slf4j.Logs;
 import com.mendhak.gpslogger.common.slf4j.SessionLogcatAppender;
 import com.mendhak.gpslogger.loggers.FileLoggerFactory;
 import com.mendhak.gpslogger.loggers.Files;
+import com.mendhak.gpslogger.loggers.fsae.FsaeLogger;
 import com.mendhak.gpslogger.loggers.nmea.NmeaFileLogger;
 import com.mendhak.gpslogger.senders.AlarmReceiver;
 import com.mendhak.gpslogger.senders.FileSenderFactory;
@@ -59,6 +60,7 @@ import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 @SuppressLint("MissingPermission")
 public class GpsLoggingService extends Service  {
@@ -84,6 +86,14 @@ public class GpsLoggingService extends Service  {
     private NmeaLocationListener nmeaLocationListener;
     private Intent alarmIntent;
     private Handler handler = new Handler();
+    private FsaeLogger fsaeLogger;
+    private PowerManager.WakeLock loggingWakeLock;
+    private final Runnable chunkRotation = new Runnable() {
+        @Override
+        public void run() {
+            rotateChunk();
+        }
+    };
 
     // ---------------------------------------------------
 
@@ -158,6 +168,7 @@ public class GpsLoggingService extends Service  {
     @Override
     public void onDestroy() {
         LOG.warn(SessionLogcatAppender.MARKER_INTERNAL, "GpsLoggingService is being destroyed by Android OS.");
+        stopFsaeAndChunking();
         unregisterEventBus();
         removeNotification();
         super.onDestroy();
@@ -409,6 +420,103 @@ public class GpsLoggingService extends Service  {
         }
     }
 
+    private String getChunkFileName() {
+        return new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+    }
+
+    private File getLogFolder() {
+        File folder = new File(preferenceHelper.getGpsLoggerFolder());
+        if (!folder.exists()) {
+            folder.mkdirs();
+        }
+        return folder;
+    }
+
+    private void startFsaeAndChunking(boolean newSession) {
+        if (preferenceHelper.shouldLogFsaeStreams() || preferenceHelper.shouldCreateNewFileInChunks()) {
+            // Sensor events and the chunk timer both stop when the CPU sleeps with the screen off.
+            acquireLoggingWakeLock();
+        } else {
+            releaseLoggingWakeLock();
+        }
+
+        if (preferenceHelper.shouldLogFsaeStreams()) {
+            if (fsaeLogger == null) {
+                fsaeLogger = new FsaeLogger(this);
+            }
+            fsaeLogger.start(getLogFolder(), Strings.getFormattedFileName(), preferenceHelper.getImuRateHz(), newSession);
+        } else if (fsaeLogger != null) {
+            fsaeLogger.stop();
+        }
+
+        scheduleChunkRotation();
+    }
+
+    private void stopFsaeAndChunking() {
+        handler.removeCallbacks(chunkRotation);
+        if (fsaeLogger != null) {
+            fsaeLogger.stop();
+        }
+        releaseLoggingWakeLock();
+    }
+
+    private void scheduleChunkRotation() {
+        handler.removeCallbacks(chunkRotation);
+        if (preferenceHelper.shouldCreateNewFileInChunks() && session.isStarted()) {
+            handler.postDelayed(chunkRotation, TimeUnit.MINUTES.toMillis(preferenceHelper.getNewFileChunkMinutes()));
+        }
+    }
+
+    /**
+     * Closes the current set of log files, starts new ones, and auto-sends the closed set.
+     */
+    private void rotateChunk() {
+        if (!session.isStarted()) {
+            return;
+        }
+
+        String oldFileName = Strings.getFormattedFileName();
+        String newFileName = getChunkFileName();
+        if (newFileName.equals(session.getCurrentFileName())) {
+            LOG.debug("Chunk started less than a second ago, not rotating");
+            return;
+        }
+
+        session.setCurrentFileName(newFileName);
+        session.setCurrentFormattedFileName(Strings.getFormattedFileName());
+        session.setAddNewTrackSegment(true);
+
+        if (fsaeLogger != null && fsaeLogger.isRunning()) {
+            fsaeLogger.rotate(Strings.getFormattedFileName());
+        }
+
+        LOG.info("New chunk: " + Strings.getFormattedFileName());
+        EventBus.getDefault().post(new ServiceEvents.FileNamed(Strings.getFormattedFileName()));
+
+        if (!Strings.isNullOrEmpty(oldFileName)) {
+            autoSendLogFile(oldFileName);
+        }
+
+        scheduleChunkRotation();
+    }
+
+    private void acquireLoggingWakeLock() {
+        if (loggingWakeLock == null) {
+            PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+            loggingWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "gpslogger:fsae_logging");
+            loggingWakeLock.setReferenceCounted(false);
+        }
+        if (!loggingWakeLock.isHeld()) {
+            loggingWakeLock.acquire(TimeUnit.HOURS.toMillis(12));
+        }
+    }
+
+    private void releaseLoggingWakeLock() {
+        if (loggingWakeLock != null && loggingWakeLock.isHeld()) {
+            loggingWakeLock.release();
+        }
+    }
+
     /**
      * Resets the form, resets file name if required, reobtains preferences
      */
@@ -436,7 +544,9 @@ public class GpsLoggingService extends Service  {
         setupAutoSendTimers();
         setupSignificantMotionSensor();
 
-        resetCurrentFileName(Strings.isNullOrEmpty(session.getCurrentFormattedFileName()));
+        boolean newSession = Strings.isNullOrEmpty(session.getCurrentFormattedFileName());
+        resetCurrentFileName(newSession);
+        startFsaeAndChunking(newSession);
 
         notifyClientsStarted(true);
         startPassiveManager();
@@ -542,6 +652,8 @@ public class GpsLoggingService extends Service  {
         session.setUserStillSinceTimeStamp(0);
         session.setLatestTimeStamp(0);
         stopAbsoluteTimer();
+        // Close the FSAE stream files before the on-stop upload so they are complete
+        stopFsaeAndChunking();
         // Email log file before setting location info to null
         autoSendLogFileOnStop();
         cancelAlarm();
@@ -633,6 +745,14 @@ public class GpsLoggingService extends Service  {
             if(!preferenceHelper.shouldHideNotificationButtons()){
                 nfc.addAction(R.drawable.annotate2, getString(R.string.menu_annotate), piAnnotate)
                         .addAction(android.R.drawable.ic_menu_close_clear_cancel, getString(R.string.shortcut_stop), piStop);
+
+                if(preferenceHelper.shouldCreateNewFileInChunks()){
+                    Intent uploadIntent = new Intent(this, GpsLoggingService.class);
+                    uploadIntent.setAction("NotificationButton_UPLOAD");
+                    uploadIntent.putExtra(IntentConstants.AUTOSEND_NOW, true);
+                    PendingIntent piUpload = PendingIntent.getService(this, 1, uploadIntent, PendingIntent.FLAG_IMMUTABLE);
+                    nfc.addAction(android.R.drawable.ic_menu_upload, getString(R.string.upload_chunk_now), piUpload);
+                }
             }
         }
 
@@ -895,7 +1015,12 @@ public class GpsLoggingService extends Service  {
         String oldFileName = session.getCurrentFormattedFileName();
 
         /* Update the file name, if required. (New day, Re-start service) */
-        if (preferenceHelper.shouldCreateCustomFile()) {
+        if (preferenceHelper.shouldCreateNewFileInChunks()) {
+            // Chunks after the first are started by rotateChunk() on a timer.
+            if (newLogEachStart || Strings.isNullOrEmpty(session.getCurrentFileName())) {
+                session.setCurrentFileName(getChunkFileName());
+            }
+        } else if (preferenceHelper.shouldCreateCustomFile()) {
             if(Strings.isNullOrEmpty(Strings.getFormattedFileName())){
                 session.setCurrentFileName(preferenceHelper.getCustomFileName());
             }
@@ -1128,6 +1253,9 @@ public class GpsLoggingService extends Service  {
         }
 
         writeToFile(loc);
+        if (fsaeLogger != null && fsaeLogger.isRunning()) {
+            fsaeLogger.logLocation(loc);
+        }
         resetAutoSendTimersIfNecessary();
         stopManagerAndResetAlarm();
         setupSignificantMotionSensor();
@@ -1259,6 +1387,10 @@ public class GpsLoggingService extends Service  {
         //session.setAddNewTrackSegment(false);
 
         if(FileLoggerFactory.getFileLoggers(getApplicationContext()).isEmpty()){
+            if (preferenceHelper.shouldLogFsaeStreams()) {
+                // The FSAE streams alone are a valid logging target
+                return;
+            }
             Systems.showErrorNotification(getApplicationContext(),
                     String.format("%s %s", getString(R.string.summary_loggingto), getString(R.string.summary_loggingto_screen)));
             return;
@@ -1344,7 +1476,12 @@ public class GpsLoggingService extends Service  {
 
     @EventBusHook
     public void onEvent(CommandEvents.AutoSend autoSend){
-        autoSendLogFile(autoSend.formattedFileName);
+        if (autoSend.formattedFileName == null && preferenceHelper.shouldCreateNewFileInChunks() && session.isStarted()) {
+            // Don't upload a half-written chunk; close it and upload that instead.
+            rotateChunk();
+        } else {
+            autoSendLogFile(autoSend.formattedFileName);
+        }
 
         EventBus.getDefault().removeStickyEvent(CommandEvents.AutoSend.class);
     }

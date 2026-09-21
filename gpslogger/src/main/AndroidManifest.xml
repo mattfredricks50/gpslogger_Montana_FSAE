@@ -30,6 +30,9 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Required for IMU sampling above 200 Hz on Android 12+ -->
+    <uses-permission android:name="android.permission.HIGH_SAMPLING_RATE_SENSORS" />
 
 
     <application
@@ -81,7 +84,7 @@
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
 
-                <data android:scheme="com.mendhak.gpslogger"
+                <data android:scheme="${applicationId}"
                     android:path="/oauth2googledrive"/>
             </intent-filter>
             <intent-filter>
