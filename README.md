@@ -1,3 +1,111 @@
+Montana FSAE Logger
+=========
+
+A fork of [mendhak/gpslogger](https://github.com/mendhak/gpslogger) that turns an Android phone into the car's datalogger. It logs GPS, accelerometer and gyroscope data on one shared clock, splits logs into fixed-length chunks, and uploads each chunk to Google Drive. The files are laid out to open directly in [PlotJuggler](https://github.com/facontidavide/PlotJuggler).
+
+All FSAE work is on the `fsae-imu` branch. `master` tracks upstream.
+
+## Using it
+
+1. Install the APK. See [Building](#building) below, or copy `gpslogger-debug.apk` to the phone and open it.
+2. Set these phone settings (Samsung phones kill background apps aggressively):
+   - **Battery:** Settings → Apps → the logger → Battery → **Unrestricted**
+   - **Location:** **Allow all the time**, with precise location on
+   - **Notifications:** allowed. The logging notification has the stop button.
+3. In the app's logging settings, under **FSAE datalogging**:
+   - **Log GPS + IMU streams:** on
+   - **IMU sample rate:** 50 / 100 / 200 / 400 Hz (default 200). Android 12+ caps apps at 200 Hz unless they have the high-sampling-rate permission.
+   - **New file every:** 7 minutes (0 = off). Each finished chunk is auto-sent when it closes.
+4. Set up Google Drive under the upload settings, sign in, and turn on auto-send.
+5. Mount the phone rigidly in the car, then press **Start** and **keep the car still for the first 2 seconds**. The logger uses that window to measure gravity and gyro bias.
+
+## Output files
+
+Each chunk shares a base name, e.g. `20260921143012`:
+
+| File | Contents | Rate |
+|---|---|---|
+| `<base>.gps` | GPS fixes | native, ~1 Hz (some phones 10 Hz) |
+| `<base>.acc` | accelerometer, including gravity, phone axes | IMU rate |
+| `<base>.gyr` | gyroscope, phone axes | IMU rate |
+| `<base>.meta` | JSON: device, sensors, actual rates, calibration, row/drop counts | once per chunk |
+
+With zip upload enabled, Drive gets `<base>.zip` containing the files above. The streams are uploaded as `text/csv`, so Drive does not convert them to Sheets.
+
+Headers:
+
+```
+.gps  time_s,utc_ms,lat_deg,lon_deg,alt_m,speed_mps,bearing_deg,hacc_m,vacc_m,speed_acc_mps,sats
+.acc  time_s,accel_x_mps2,accel_y_mps2,accel_z_mps2
+.gyr  time_s,gyro_x_rads,gyro_y_rads,gyro_z_rads
+```
+
+Format rules, which every stream follows (including the planned `.ecu` stream):
+
+- **`time_s` is the first column:** `(elapsedRealtimeNanos - session_start_ns) / 1e9`, with 6 decimals. Sensors use `SensorEvent.timestamp` and GPS uses `Location.getElapsedRealtimeNanos()`. Wall-clock time is only in `utc_ms` and `.meta`.
+- **`session_start_ns` is set when you press Start.** It does not reset between chunks, so chunk files join end to end. It resets only on a new Start or a phone reboot.
+- **Time strictly increases within a file.** Samples that go backwards are dropped and counted in `.meta`.
+- **One header row, with units in the column names.** Plain CSV with a `.` decimal on every locale. Missing values are empty fields. UTF-8, no BOM, `\n` line endings.
+- **Gaps are left as gaps.** Nothing is interpolated or resampled on the phone.
+- **Data is raw.** Axis rotation into car frame and bias removal happen in post-processing, using the calibration block in `.meta`. Check `accel_std_mps2` and `gyro_std_rads` to confirm the car really was still.
+
+GPSLogger's own `.csv` / `.gpx` / `.kml` outputs still work but are not part of the FSAE format.
+
+## Viewing in PlotJuggler
+
+1. Install from the [PlotJuggler releases](https://github.com/facontidavide/PlotJuggler/releases).
+2. **File → Load Data**, pick a `.gps`, `.acc` or `.gyr` file, and choose `time_s` as the time column. Repeat for the other files. They line up automatically because they share a time base.
+3. For a quick track map, plot `lon_deg` against `lat_deg` as an XY curve. For a g-g diagram, plot two accel axes against each other as an XY curve (after rotating into car axes).
+
+## Building
+
+Requires the Android SDK and **JDK 17 or 21**. Gradle 8.9 does not run on Java 8 or on Android Studio's bundled Java 25.
+
+```powershell
+$env:JAVA_HOME="C:\Users\craft\.jdks\jbr-21.0.11"
+.\gradlew.bat :gpslogger:assembleDebug
+adb install -r gpslogger\build\outputs\apk\debug\gpslogger-debug.apk
+```
+
+Unit tests for the FSAE writers are in `gpslogger/src/test/java/com/mendhak/gpslogger/loggers/fsae/`:
+
+```powershell
+.\gradlew.bat :gpslogger:testDebugUnitTest --tests "com.mendhak.gpslogger.loggers.fsae.*"
+```
+
+The FSAE code lives in `gpslogger/src/main/java/com/mendhak/gpslogger/loggers/fsae/` (`FsaeLogger`, `CsvStreamWriter`). It is wired into `GpsLoggingService`.
+
+## Google Drive login
+
+The app is `com.fsae.logger` (debug builds: `com.fsae.logger.debug`). It uses the team's own Google Cloud OAuth client, set in `GoogleDriveManager.getGoogleDriveApplicationClientID()`.
+
+Google matches the sign-in by **package name + signing key SHA-1**. If you build with a different debug keystore (a different PC), or make a release build, add another **Android** OAuth client in the same Google Cloud project:
+
+- **Package name:** `com.fsae.logger.debug` for debug, or `com.fsae.logger` for release
+- **SHA-1:** from `keytool -list -v -keystore %USERPROFILE%\.android\debug.keystore -alias androiddebugkey -storepass android`
+
+Project settings in Google Cloud:
+- Google Drive API enabled
+- Scope `https://www.googleapis.com/auth/drive.file` declared
+- Audience **External** and **In production**. In Testing mode, refresh tokens expire after 7 days.
+
+Downloaded `client_secret_*.json` files are git-ignored. Android OAuth clients have no secret, but keep them out of the repo anyway.
+
+## Roadmap
+
+- `.ecu` stream: Speeduino output channels over AirBear (TCP, TunerStudio protocol), timestamped at receive time on the same clock
+- Longer term: ESP32 CAN-to-BLE bridge, so the logger also works with a Haltech ECU
+
+## License
+
+GPL-2.0, inherited from upstream ([LICENSE.md](LICENSE.md)). If the app is distributed outside the team, the modified source must be made available.
+
+---
+
+# Upstream GPSLogger README
+
+Everything below is the original upstream documentation.
+
 GPSLogger  [![githubactions](https://github.com/mendhak/gpslogger/workflows/Android%20CI/badge.svg)](https://github.com/mendhak/gpslogger/actions) [![pgp](assets/pgp.png)](https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x95e7d75c76cbe9a9) [![Weblate](https://hosted.weblate.org/widgets/gpslogger/-/android/svg-badge.svg)](https://hosted.weblate.org/engage/gpslogger/)
 =========
 
