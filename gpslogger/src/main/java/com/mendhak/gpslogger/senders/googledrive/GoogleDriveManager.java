@@ -46,7 +46,10 @@ public class GoogleDriveManager extends FileSender {
     }
 
     public static String[] getGoogleDriveApplicationScopes() {
-        return new String[]{"https://www.googleapis.com/auth/drive.file"};
+        // Full drive scope (not drive.file) so uploads can go into existing folders the app didn't
+        // create, such as the team's Shared Drive. This is a restricted scope: unverified apps show a
+        // warning at sign-in and are capped at 100 users.
+        return new String[]{"https://www.googleapis.com/auth/drive"};
     }
 
     public static AuthorizationService getAuthorizationService(Context context) {

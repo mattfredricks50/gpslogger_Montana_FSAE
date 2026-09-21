@@ -86,8 +86,15 @@ Google matches the sign-in by **package name + signing key SHA-1**. If you build
 
 Project settings in Google Cloud:
 - Google Drive API enabled
-- Scope `https://www.googleapis.com/auth/drive.file` declared
+- Scope `https://www.googleapis.com/auth/drive` declared (full Drive, so the app can write into the team Shared Drive). This is a restricted scope: sign-in shows an "unverified app" warning (Advanced → continue), and unverified apps are capped at 100 users.
 - Audience **External** and **In production**. In Testing mode, refresh tokens expire after 7 days.
+- On the Android client, **Advanced settings → Enable custom URI scheme** must be ticked. The app's redirect is `com.fsae.logger.debug:/oauth2googledrive`, and without this Google rejects sign-in with `400 invalid_request`.
+
+### Uploading to the team Shared Drive
+
+In the app's Google Drive settings, set **Google Drive folder path** to the Shared Drive folder's link (`https://drive.google.com/drive/folders/…`) or to `id:FOLDER_ID`. Files then upload straight into that folder. A plain name or path (`aaa/bbb`) keeps the upstream behavior: the app creates the folders in your own My Drive.
+
+The signed-in account must be a member of the Shared Drive with at least **Contributor** access. If an upload fails, the error message includes Drive's response (e.g. 404 = the account can't see the folder, 403 = no permission to add files). After changing scopes, use **Clear authorization** in the app and sign in again.
 
 Downloaded `client_secret_*.json` files are git-ignored. Android OAuth clients have no secret, but keep them out of the repo anyway.
 

@@ -95,21 +95,26 @@ public class GoogleDriveWorker extends Worker {
                 return Result.failure();
             }
 
-            // Figure out the Folder ID to upload to, from the path; recursively create if it doesn't exist.
+            // A folder link or id: setting targets an existing folder (eg. in a Shared Drive) directly.
+            // Otherwise figure out the Folder ID from the path; recursively create if it doesn't exist.
             String folderPath = preferenceHelper.getGoogleDriveFolderPath();
-            String[] pathParts = folderPath.split("/");
-            String parentFolderId = null;
-            String latestFolderId = null;
-            for (String part : pathParts) {
-                latestFolderId = getFileIdFromFileName(googleDriveAccessToken, part, parentFolderId);
-                if (!Strings.isNullOrEmpty(latestFolderId)) {
-                    LOG.debug("Folder " + part + " found, folder ID is " + latestFolderId);
-                } else {
-                    LOG.debug("Folder " + part + " not found, creating.");
-                    latestFolderId = createEmptyFile(googleDriveAccessToken, part,
-                            "application/vnd.google-apps.folder", Strings.isNullOrEmpty(parentFolderId) ? "root" : parentFolderId);
+            String latestFolderId = DriveFolderRef.parseFolderId(folderPath);
+            if (!Strings.isNullOrEmpty(latestFolderId)) {
+                LOG.debug("Uploading to existing folder ID " + latestFolderId);
+            } else {
+                String[] pathParts = folderPath.split("/");
+                String parentFolderId = null;
+                for (String part : pathParts) {
+                    latestFolderId = getFileIdFromFileName(googleDriveAccessToken, part, parentFolderId);
+                    if (!Strings.isNullOrEmpty(latestFolderId)) {
+                        LOG.debug("Folder " + part + " found, folder ID is " + latestFolderId);
+                    } else {
+                        LOG.debug("Folder " + part + " not found, creating.");
+                        latestFolderId = createEmptyFile(googleDriveAccessToken, part,
+                                "application/vnd.google-apps.folder", Strings.isNullOrEmpty(parentFolderId) ? "root" : parentFolderId);
+                    }
+                    parentFolderId = latestFolderId;
                 }
-                parentFolderId = latestFolderId;
             }
 
             String gpsLoggerFolderId = latestFolderId;
@@ -176,9 +181,11 @@ public class GoogleDriveWorker extends Worker {
 
         String inFolderParam = "";
         if (!Strings.isNullOrEmpty(inFolderId)) {
-            inFolderParam = "+and+'" + inFolderId + "'+in+parents";
+            // corpora=allDrives so the lookup also sees Shared Drive folders
+            inFolderParam = "+and+'" + inFolderId + "'+in+parents&corpora=allDrives";
         }
-        String searchUrl = "https://www.googleapis.com/drive/v3/files?q=name%20%3D%20%27" + fileName + "%27%20and%20trashed%20%3D%20false" + inFolderParam;
+        String searchUrl = "https://www.googleapis.com/drive/v3/files?q=name%20%3D%20%27" + fileName + "%27%20and%20trashed%20%3D%20false" + inFolderParam
+                + "&supportsAllDrives=true&includeItemsFromAllDrives=true";
         OkHttpClient client = new OkHttpClient();
         Request.Builder requestBuilder = new Request.Builder().url(searchUrl);
 
@@ -190,6 +197,10 @@ public class GoogleDriveWorker extends Worker {
         LOG.debug(fileMetadata);
         response.body().close();
         JSONObject fileMetadataJson = new JSONObject(fileMetadata);
+        if (!fileMetadataJson.has("files")) {
+            // eg. 404 when the account can't see the folder
+            throw new Exception("Google Drive search failed: " + fileMetadata);
+        }
         if (fileMetadataJson.getJSONArray("files") != null && fileMetadataJson.getJSONArray("files").length() > 0) {
             fileId = fileMetadataJson.getJSONArray("files").getJSONObject(0).get("id").toString();
             LOG.debug("Found file with ID " + fileId);
@@ -201,7 +212,7 @@ public class GoogleDriveWorker extends Worker {
     private String createEmptyFile(String accessToken, String fileName, String mimeType, String parentFolderId) throws Exception {
 
         String fileId = null;
-        String createFileUrl = "https://www.googleapis.com/drive/v3/files";
+        String createFileUrl = "https://www.googleapis.com/drive/v3/files?supportsAllDrives=true";
 
         String createFilePayload = "   {\n" +
                 "             \"name\": \"" + fileName + "\",\n" +
@@ -225,6 +236,10 @@ public class GoogleDriveWorker extends Worker {
         response.body().close();
 
         JSONObject fileMetadataJson = new JSONObject(fileMetadata);
+        if (!fileMetadataJson.has("id")) {
+            // eg. 403 when the account can't add files to the folder
+            throw new Exception("Google Drive create failed: " + fileMetadata);
+        }
         fileId = fileMetadataJson.getString("id");
 
         return fileId;
@@ -233,7 +248,7 @@ public class GoogleDriveWorker extends Worker {
     private String updateFileContents(String accessToken, String gpxFileId, File fileToUpload) throws Exception {
         String fileId = null;
 
-        String fileUpdateUrl = "https://www.googleapis.com/upload/drive/v3/files/" + gpxFileId + "?uploadType=media";
+        String fileUpdateUrl = "https://www.googleapis.com/upload/drive/v3/files/" + gpxFileId + "?uploadType=media&supportsAllDrives=true";
 
         OkHttpClient client = new OkHttpClient();
         Request.Builder requestBuilder = new Request.Builder().url(fileUpdateUrl);
