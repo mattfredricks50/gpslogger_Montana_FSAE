@@ -545,6 +545,9 @@
     <string name="log_fsae_streams_title" translatable="false">Log GPS + IMU streams</string>
     <string name="log_fsae_streams_summary" translatable="false">Writes .gps, .acc (accelerometer), .gyr (gyroscope) and .meta files for PlotJuggler, all on one session clock. Keeps the CPU awake while logging.</string>
     <string name="log_imu_rate_title" translatable="false">IMU sample rate</string>
+    <string name="log_fsae_ecu_title" translatable="false">Log Speeduino via AirBear</string>
+    <string name="log_fsae_ecu_summary" translatable="false">Writes a .ecu file from an AirBear in Web Dash mode (about 30 Hz). Speeduino secondary serial must be set to Generic (Fixed List).</string>
+    <string name="fsae_ecu_hosts_title" translatable="false">AirBear address(es)</string>
     <string name="new_file_chunk_title" translatable="false">New file every</string>
     <string name="upload_chunk_now" translatable="false">Upload now</string>
 </resources>

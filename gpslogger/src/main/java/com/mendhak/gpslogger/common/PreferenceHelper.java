@@ -595,11 +595,35 @@ public class PreferenceHelper {
      */
     @ProfilePreference(name=PreferenceNames.LOG_FSAE_STREAMS)
     public boolean shouldLogFsaeStreams() {
-        return prefs.getBoolean(PreferenceNames.LOG_FSAE_STREAMS, false);
+        return prefs.getBoolean(PreferenceNames.LOG_FSAE_STREAMS, true);
     }
 
     public void setShouldLogFsaeStreams(boolean enabled) {
         prefs.edit().putBoolean(PreferenceNames.LOG_FSAE_STREAMS, enabled).apply();
+    }
+
+    /**
+     * Whether to also log Speeduino data from an AirBear (Web Dash mode) to a .ecu file
+     */
+    @ProfilePreference(name=PreferenceNames.LOG_FSAE_ECU)
+    public boolean shouldLogFsaeEcu() {
+        return prefs.getBoolean(PreferenceNames.LOG_FSAE_ECU, true);
+    }
+
+    public void setShouldLogFsaeEcu(boolean enabled) {
+        prefs.edit().putBoolean(PreferenceNames.LOG_FSAE_ECU, enabled).apply();
+    }
+
+    /**
+     * Comma-separated AirBear addresses, tried in order
+     */
+    @ProfilePreference(name=PreferenceNames.FSAE_ECU_HOSTS)
+    public String getFsaeEcuHosts() {
+        return prefs.getString(PreferenceNames.FSAE_ECU_HOSTS, "speeduino.local,192.168.4.1");
+    }
+
+    public void setFsaeEcuHosts(String hosts) {
+        prefs.edit().putString(PreferenceNames.FSAE_ECU_HOSTS, hosts).apply();
     }
 
     @ProfilePreference(name=PreferenceNames.LOG_TO_IMU_RATE_HZ)
@@ -617,7 +641,7 @@ public class PreferenceHelper {
      */
     @ProfilePreference(name=PreferenceNames.NEW_FILE_CHUNK_MINUTES)
     public int getNewFileChunkMinutes() {
-        return Strings.toInt(prefs.getString(PreferenceNames.NEW_FILE_CHUNK_MINUTES, "0"), 0);
+        return Strings.toInt(prefs.getString(PreferenceNames.NEW_FILE_CHUNK_MINUTES, "7"), 7);
     }
 
     public void setNewFileChunkMinutes(String minutes) {

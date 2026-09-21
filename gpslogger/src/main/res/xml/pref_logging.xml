@@ -59,7 +59,7 @@
         app:iconSpaceReserved="false">
 
         <SwitchPreferenceCompat
-            android:defaultValue="false"
+            android:defaultValue="true"
             android:key="log_fsae_streams"
             android:summary="@string/log_fsae_streams_summary"
             android:title="@string/log_fsae_streams_title"
@@ -75,8 +75,24 @@
             app:iconSpaceReserved="false"
             app:useSimpleSummaryProvider="true" />
 
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:dependency="log_fsae_streams"
+            android:key="log_fsae_ecu"
+            android:summary="@string/log_fsae_ecu_summary"
+            android:title="@string/log_fsae_ecu_title"
+            app:iconSpaceReserved="false" />
+
+        <EditTextPreference
+            android:defaultValue="speeduino.local,192.168.4.1"
+            android:dependency="log_fsae_ecu"
+            android:key="fsae_ecu_hosts"
+            android:title="@string/fsae_ecu_hosts_title"
+            app:iconSpaceReserved="false"
+            app:useSimpleSummaryProvider="true" />
+
         <ListPreference
-            android:defaultValue="0"
+            android:defaultValue="7"
             android:entries="@array/chunk_minutes_entries"
             android:entryValues="@array/chunk_minutes_values"
             android:key="new_file_chunk_minutes"

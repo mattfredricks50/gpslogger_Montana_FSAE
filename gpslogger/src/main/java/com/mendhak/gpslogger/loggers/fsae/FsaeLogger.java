@@ -87,6 +87,8 @@ public class FsaeLogger implements SensorEventListener {
     private long sessionStartNs;
     private HandlerThread sensorThread;
     private Handler sensorHandler;
+    private String ecuHosts;
+    private EcuLogger ecu;
 
     // Per-chunk rows discarded because their timestamp went backwards; reset on rotate
     private final AtomicLong accDropped = new AtomicLong();
@@ -106,6 +108,16 @@ public class FsaeLogger implements SensorEventListener {
     public FsaeLogger(Context context) {
         this.context = context.getApplicationContext();
         this.sensorManager = (SensorManager) this.context.getSystemService(Context.SENSOR_SERVICE);
+    }
+
+    /**
+     * Log Speeduino data from an AirBear in Web Dash mode to {@code <base>.ecu}. Call before
+     * {@link #start}; null or empty disables the ECU stream.
+     *
+     * @param hostsCsv AirBear addresses to try in order, e.g. "speeduino.local,192.168.4.1"
+     */
+    public void setEcuHosts(String hostsCsv) {
+        this.ecuHosts = hostsCsv;
     }
 
     public boolean isRunning() {
@@ -137,7 +149,11 @@ public class FsaeLogger implements SensorEventListener {
             calibration = new Calibration(Math.max(nowNs, sessionStartNs));
         }
 
+        ecu = Strings.isNullOrEmpty(ecuHosts) ? null : new EcuLogger(context, ecuHosts, sessionStartNs);
         openChunk(baseName);
+        if (ecu != null) {
+            ecu.start();
+        }
 
         sensorThread = new HandlerThread("FsaeLogger", Process.THREAD_PRIORITY_URGENT_DISPLAY);
         sensorThread.start();
@@ -175,7 +191,11 @@ public class FsaeLogger implements SensorEventListener {
         }
         sensorThread = null;
         sensorHandler = null;
+        if (ecu != null) {
+            ecu.stop();
+        }
         closeChunk();
+        ecu = null;
         LOG.info("FSAE logging stopped");
     }
 
@@ -286,6 +306,9 @@ public class FsaeLogger implements SensorEventListener {
         gpsWriter.open(new File(folder, baseName + ".gps"));
         accWriter.open(new File(folder, baseName + ".acc"));
         gyrWriter.open(new File(folder, baseName + ".gyr"));
+        if (ecu != null) {
+            ecu.openChunk(new File(folder, baseName + ".ecu"));
+        }
         writeMeta(false);
     }
 
@@ -293,10 +316,16 @@ public class FsaeLogger implements SensorEventListener {
         gpsWriter.flush();
         accWriter.flush();
         gyrWriter.flush();
+        if (ecu != null) {
+            ecu.flush();
+        }
         writeMeta(true);
         gpsWriter.close();
         accWriter.close();
         gyrWriter.close();
+        if (ecu != null) {
+            ecu.closeChunk();
+        }
     }
 
     private void writeMeta(boolean chunkComplete) {
@@ -316,6 +345,9 @@ public class FsaeLogger implements SensorEventListener {
             putStream(chunk, "acc", accWriter, accDropped);
             putStream(chunk, "gyr", gyrWriter, gyrDropped);
             meta.put("chunk", chunk);
+            if (ecu != null) {
+                ecu.putMeta(chunk, meta);
+            }
 
             JSONObject device = new JSONObject();
             device.put("manufacturer", Build.MANUFACTURER);

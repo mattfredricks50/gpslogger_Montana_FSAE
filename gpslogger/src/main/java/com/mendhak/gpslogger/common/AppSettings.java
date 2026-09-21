@@ -28,6 +28,7 @@ import android.content.Context;
 
 import com.mendhak.gpslogger.R;
 import com.mendhak.gpslogger.common.slf4j.Logs;
+import androidx.preference.PreferenceManager;
 import de.greenrobot.event.EventBus;
 import org.slf4j.Logger;
 
@@ -48,6 +49,8 @@ public class AppSettings extends Application {
         Logs.configure();
         LOG = Logs.of(this.getClass());
         LOG.debug("SLF4J logging configured");
+
+        FsaeDefaults.applyOnce(PreferenceManager.getDefaultSharedPreferences(this));
 
         //Configure the Event Bus
         EventBus.builder().logNoSubscriberMessages(false).sendNoSubscriberEvent(false).installDefaultEventBus();

@@ -338,6 +338,12 @@ public class GpsLoggingService extends Service  {
      */
     public void setupAutoSendTimers() {
 
+        if (preferenceHelper.shouldCreateNewFileInChunks()) {
+            // Each finished chunk is sent when it closes; a second timer would cut extra tiny chunks
+            cancelAlarm();
+            return;
+        }
+
         if (preferenceHelper.isAutoSendEnabled() && session.getAutoSendDelay() > 0 && session.isStarted()) {
             LOG.debug("Setting up autosend timers. Auto Send Enabled - " + String.valueOf(preferenceHelper.isAutoSendEnabled())
                     + ", Auto Send Delay - " + String.valueOf(session.getAutoSendDelay()));
@@ -444,6 +450,7 @@ public class GpsLoggingService extends Service  {
             if (fsaeLogger == null) {
                 fsaeLogger = new FsaeLogger(this);
             }
+            fsaeLogger.setEcuHosts(preferenceHelper.shouldLogFsaeEcu() ? preferenceHelper.getFsaeEcuHosts() : null);
             fsaeLogger.start(getLogFolder(), Strings.getFormattedFileName(), preferenceHelper.getImuRateHz(), newSession);
         } else if (fsaeLogger != null) {
             fsaeLogger.stop();
