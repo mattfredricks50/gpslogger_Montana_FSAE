@@ -54,7 +54,12 @@ GPSLogger's own `.csv` / `.gpx` / `.kml` outputs still work but are not part of 
 ## Viewing in PlotJuggler
 
 1. Install from the [PlotJuggler releases](https://github.com/facontidavide/PlotJuggler/releases).
-2. **File → Load Data**, pick a `.gps`, `.acc` or `.gyr` file, and choose `time_s` as the time column. Repeat for the other files. They line up automatically because they share a time base.
+2. Download the session's files from Drive (loose files, chunk `.zip`s, or Drive's own download `.zip` all work) and run:
+   ```
+   python tools/plotjuggler/fsae_to_plotjuggler.py <downloaded files or folder> -o plotjuggler
+   ```
+   PlotJuggler only opens `.csv` files, so this step is required. It joins the 7-minute chunks into one `<session>_gps.csv` / `_acc.csv` / `_gyr.csv` / `_ecu.csv` per logging session. It also prints a quality check from `.meta`: actual IMU rate, dropped samples, whether the car was still during calibration, and ECU connection errors. Python 3 standard library only.
+3. **File → Load Data**, pick one of the CSVs, and choose `time_s` as the time column. Repeat for the other streams of the same session. When asked, keep the previously loaded data. They line up automatically because they share a time base. Empty cells (e.g. missing GPS accuracy) are skipped, not plotted as zero.
 3. For a quick track map, plot `lon_deg` against `lat_deg` as an XY curve. For a g-g diagram, plot two accel axes against each other as an XY curve (after rotating into car axes).
 
 ## Building
