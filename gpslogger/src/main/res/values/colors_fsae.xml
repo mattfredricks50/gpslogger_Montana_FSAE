@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FSAE fork: chart series colours, x/y/z as red/green/blue by convention -->
+<resources>
+    <color name="fsae_series_x">#D32F2F</color>
+    <color name="fsae_series_y">#2E7D32</color>
+    <color name="fsae_series_z">#1565C0</color>
+    <color name="fsae_series_speed">#EF6C00</color>
+</resources>

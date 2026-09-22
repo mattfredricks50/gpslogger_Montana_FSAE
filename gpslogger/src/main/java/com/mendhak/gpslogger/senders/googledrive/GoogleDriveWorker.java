@@ -5,6 +5,7 @@ import android.os.Build;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.work.Data;
 import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
@@ -50,6 +51,7 @@ public class GoogleDriveWorker extends Worker {
 
         String filePath = getInputData().getString("filePath");
         File fileToUpload = new File(filePath);
+        reportProgress(fileToUpload.getName(), 0, fileToUpload.length());
         boolean success = true;
         String failureMessage = "";
         Throwable failureThrowable = null;
@@ -92,6 +94,8 @@ public class GoogleDriveWorker extends Worker {
 
             if (Strings.isNullOrEmpty(googleDriveAccessToken)) {
                 LOG.error("Failed to fetch Access Token for Google Drive. Stopping this job.");
+                DriveUploadStatus.recordFailure(getApplicationContext(), filePath, fileToUpload.getName(),
+                        "Not signed in to Google Drive");
                 return Result.failure();
             }
 
@@ -153,6 +157,7 @@ public class GoogleDriveWorker extends Worker {
         }
 
         if(success){
+            DriveUploadStatus.recordSuccess(getApplicationContext(), fileToUpload.getName());
             // Notify internal listeners
             EventBus.getDefault().post(new UploadEvents.GoogleDrive().succeeded());
             // Notify external listeners
@@ -169,6 +174,7 @@ public class GoogleDriveWorker extends Worker {
             failureThrowable = new Exception(failureMessage);
         }
 
+        DriveUploadStatus.recordFailure(getApplicationContext(), filePath, fileToUpload.getName(), failureMessage);
         EventBus.getDefault()
                 .post(new UploadEvents.GoogleDrive().failed(failureMessage, failureThrowable));
         return Result.failure();
@@ -255,7 +261,14 @@ public class GoogleDriveWorker extends Worker {
 
         requestBuilder.addHeader("Authorization", "Bearer " + accessToken);
         // Stream from disk rather than reading the whole file into memory; IMU logs are large.
-        RequestBody body = RequestBody.create(MediaType.parse(Files.getMimeTypeFromFileName(fileToUpload.getName())), fileToUpload);
+        final String name = fileToUpload.getName();
+        RequestBody body = new ProgressFileBody(MediaType.parse(Files.getMimeTypeFromFileName(name)), fileToUpload,
+                new ProgressFileBody.Listener() {
+                    @Override
+                    public void onProgress(long sent, long total) {
+                        reportProgress(name, sent, total);
+                    }
+                });
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
             requestBuilder.addHeader("X-HTTP-Method-Override", "PATCH");
         }
@@ -271,6 +284,14 @@ public class GoogleDriveWorker extends Worker {
         fileId = fileMetadataJson.getString("id");
 
         return fileId;
+    }
+
+    private void reportProgress(String fileName, long sent, long total) {
+        setProgressAsync(new Data.Builder()
+                .putString(DriveUploadStatus.PROGRESS_FILE, fileName)
+                .putLong(DriveUploadStatus.PROGRESS_SENT, sent)
+                .putLong(DriveUploadStatus.PROGRESS_TOTAL, total)
+                .build());
     }
 
     protected int getRetryLimit() {

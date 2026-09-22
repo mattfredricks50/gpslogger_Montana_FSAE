@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FSAE fork: lighter tints so the series stay readable on the dark surface -->
+<resources>
+    <color name="fsae_series_x">#EF5350</color>
+    <color name="fsae_series_y">#66BB6A</color>
+    <color name="fsae_series_z">#42A5F5</color>
+    <color name="fsae_series_speed">#FFA726</color>
+</resources>

@@ -874,7 +874,9 @@ public class GpsLoggingService extends Service  {
         if (session.isGpsEnabled() && preferenceHelper.shouldLogSatelliteLocations()) {
             LOG.info("Requesting GPS location updates");
             // gps satellite based
-            gpsLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 1000, 0, gpsLocationListener);
+            // FSAE: ask for 10 Hz; the GNSS chip delivers whatever it supports (often 1 Hz)
+            long gpsIntervalMs = preferenceHelper.shouldLogFsaeStreams() ? 100 : 1000;
+            gpsLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, gpsIntervalMs, 0, gpsLocationListener);
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 gpsLocationManager.registerGnssStatusCallback(gnssStatusCallback);

@@ -91,6 +91,21 @@
             app:iconSpaceReserved="false"
             app:useSimpleSummaryProvider="true" />
 
+        <Preference
+            android:key="fsae_clear_uploaded"
+            android:summary="@string/fsae_clear_uploaded_summary"
+            android:title="@string/fsae_clear_uploaded_title"
+            app:iconSpaceReserved="false" />
+
+        <ListPreference
+            android:defaultValue="+y"
+            android:entries="@array/mount_forward_entries"
+            android:entryValues="@array/mount_forward_values"
+            android:key="fsae_mount_forward"
+            android:title="@string/fsae_mount_forward_title"
+            app:iconSpaceReserved="false"
+            app:useSimpleSummaryProvider="true" />
+
         <ListPreference
             android:defaultValue="7"
             android:entries="@array/chunk_minutes_entries"

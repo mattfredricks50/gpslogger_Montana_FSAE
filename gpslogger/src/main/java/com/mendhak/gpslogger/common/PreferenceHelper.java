@@ -626,6 +626,18 @@ public class PreferenceHelper {
         prefs.edit().putString(PreferenceNames.FSAE_ECU_HOSTS, hosts).apply();
     }
 
+    /**
+     * Phone axis pointing at the car's nose ("+y" = top of the phone), for car-frame g
+     */
+    @ProfilePreference(name=PreferenceNames.FSAE_MOUNT_FORWARD)
+    public String getFsaeMountForward() {
+        return prefs.getString(PreferenceNames.FSAE_MOUNT_FORWARD, "+y");
+    }
+
+    public void setFsaeMountForward(String axis) {
+        prefs.edit().putString(PreferenceNames.FSAE_MOUNT_FORWARD, axis).apply();
+    }
+
     @ProfilePreference(name=PreferenceNames.LOG_TO_IMU_RATE_HZ)
     public int getImuRateHz() {
         return Strings.toInt(prefs.getString(PreferenceNames.LOG_TO_IMU_RATE_HZ, "200"), 200);

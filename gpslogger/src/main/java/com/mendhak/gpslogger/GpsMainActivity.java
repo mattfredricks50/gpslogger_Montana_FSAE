@@ -95,7 +95,11 @@ import com.mendhak.gpslogger.senders.FileSender;
 import com.mendhak.gpslogger.senders.FileSenderFactory;
 import com.mendhak.gpslogger.ui.Dialogs;
 import com.mendhak.gpslogger.ui.components.GpsLoggerDrawerItem;
+import com.mendhak.gpslogger.ui.components.UploadStatusBar;
 import com.mendhak.gpslogger.ui.fragments.display.AnnotationViewFragment;
+import com.mendhak.gpslogger.ui.fragments.display.FsaeChartsFragment;
+import com.mendhak.gpslogger.ui.fragments.display.FsaeGgFragment;
+import com.mendhak.gpslogger.ui.fragments.display.FsaeStatusFragment;
 import com.mendhak.gpslogger.ui.fragments.display.GenericViewFragment;
 import com.mendhak.gpslogger.ui.fragments.display.GpsBigViewFragment;
 import com.mendhak.gpslogger.ui.fragments.display.GpsDetailedViewFragment;
@@ -158,6 +162,7 @@ public class GpsMainActivity extends AppCompatActivity
         Systems.setLocale(preferenceHelper.getUserSpecifiedLocale(), getBaseContext(),getResources());
 
         setContentView(R.layout.activity_gps_main);
+        ((UploadStatusBar) findViewById(R.id.upload_status_bar)).bind(this);
 
         setUpToolbar();
         setUpNavigationDrawer(savedInstanceState);
@@ -1079,6 +1084,15 @@ public class GpsMainActivity extends AppCompatActivity
                 break;
             case 4:
                 transaction.replace(R.id.container, AnnotationViewFragment.newInstance());
+                break;
+            case 5:
+                transaction.replace(R.id.container, FsaeStatusFragment.newInstance());
+                break;
+            case 6:
+                transaction.replace(R.id.container, FsaeChartsFragment.newInstance());
+                break;
+            case 7:
+                transaction.replace(R.id.container, FsaeGgFragment.newInstance());
                 break;
 
         }

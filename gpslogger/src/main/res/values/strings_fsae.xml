@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FSAE fork: live views. Kept out of strings.xml to stay clear of upstream merges. -->
+<resources>
+    <string name="view_fsae_status" translatable="false">FSAE Status</string>
+    <string name="view_fsae_charts" translatable="false">FSAE Live Charts</string>
+
+    <string name="fsae_streams_off" translatable="false">FSAE streams are off. Turn on \"Log GPS + IMU streams\" in Logging details.</string>
+    <string name="fsae_not_logging" translatable="false">Not logging. Showing the last data received.</string>
+    <string name="fsae_charts_hint" translatable="false">Tap to change the time window</string>
+
+    <string name="fsae_section_logger" translatable="false">Logger</string>
+    <string name="fsae_section_accel" translatable="false">Accelerometer</string>
+    <string name="fsae_section_gyro" translatable="false">Gyroscope</string>
+    <string name="fsae_section_gps" translatable="false">GPS</string>
+    <string name="fsae_section_calibration" translatable="false">Stationary calibration</string>
+    <string name="fsae_section_upload" translatable="false">Google Drive upload</string>
+
+    <string name="fsae_state" translatable="false">State</string>
+    <string name="fsae_state_logging" translatable="false">Logging</string>
+    <string name="fsae_state_stopped" translatable="false">Stopped</string>
+    <string name="fsae_session_time" translatable="false">Session time</string>
+    <string name="fsae_chunk" translatable="false">Chunk</string>
+    <string name="fsae_chunk_age" translatable="false">Chunk age</string>
+    <string name="fsae_next_rotation" translatable="false">Next rotation</string>
+    <string name="fsae_rotation_off" translatable="false">off</string>
+
+    <string name="fsae_rate" translatable="false">Rate</string>
+    <string name="fsae_rows" translatable="false">Rows (chunk)</string>
+    <string name="fsae_dropped" translatable="false">Dropped (chunk)</string>
+    <string name="fsae_rate_format" translatable="false">%1$.1f Hz of %2$d</string>
+    <string name="fsae_gps_rate_format" translatable="false">%1$.1f Hz</string>
+
+    <string name="fsae_fix_age" translatable="false">Fix age</string>
+    <string name="fsae_accuracy" translatable="false">Accuracy</string>
+    <string name="fsae_satellites" translatable="false">Satellites</string>
+    <string name="fsae_speed" translatable="false">Speed</string>
+    <string name="fsae_no_fix" translatable="false">no fix</string>
+
+    <string name="fsae_cal_status" translatable="false">Status</string>
+    <string name="fsae_cal_pending" translatable="false">pending (keep the car still)</string>
+    <string name="fsae_cal_done" translatable="false">done</string>
+    <string name="fsae_cal_gravity" translatable="false">|g| measured</string>
+    <string name="fsae_cal_accel_std" translatable="false">Accel noise (max axis)</string>
+    <string name="fsae_cal_gyro_std" translatable="false">Gyro noise (max axis)</string>
+
+    <string name="fsae_upload_last" translatable="false">Last result</string>
+    <string name="fsae_upload_when" translatable="false">When</string>
+    <string name="fsae_upload_message" translatable="false">Message</string>
+    <string name="fsae_upload_none" translatable="false">none since app start</string>
+    <string name="fsae_upload_ok" translatable="false">success</string>
+    <string name="fsae_upload_failed" translatable="false">failed</string>
+    <string name="fsae_ago_format" translatable="false">%1$s ago</string>
+
+    <string name="fsae_chart_accel" translatable="false">Accel (g)</string>
+    <string name="fsae_chart_gyro" translatable="false">Gyro (deg/s)</string>
+    <string name="fsae_chart_speed" translatable="false">GPS speed (km/h)</string>
+    <string name="fsae_axes_phone" translatable="false">phone axes</string>
+    <string name="fsae_axes_car" translatable="false">car axes</string>
+</resources>

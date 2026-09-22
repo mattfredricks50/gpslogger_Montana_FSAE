@@ -136,6 +136,10 @@ public class LoggingSettingsFragment extends PreferenceFragmentCompat
         setPreferenceCsvSummary(preferenceHelper.getCSVDelimiter(), preferenceHelper.shouldCSVUseCommaInsteadOfPoint());
 
         findPreference("delete_files").setOnPreferenceClickListener(this);
+        findPreference("fsae_clear_uploaded").setOnPreferenceClickListener(p -> {
+            com.mendhak.gpslogger.senders.googledrive.UploadedLogCleaner.confirmAndDelete(requireActivity());
+            return true;
+        });
 
     }
 

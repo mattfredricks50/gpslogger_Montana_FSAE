@@ -77,12 +77,14 @@ public class FsaeLogger implements SensorEventListener {
     private final Context context;
     private final SensorManager sensorManager;
     private final Session session = Session.getInstance();
+    private final LiveTelemetry live = LiveTelemetry.getInstance();
     private final CsvStreamWriter gpsWriter = new CsvStreamWriter(GPS_HEADER);
     private final CsvStreamWriter accWriter = new CsvStreamWriter(ACC_HEADER);
     private final CsvStreamWriter gyrWriter = new CsvStreamWriter(GYR_HEADER);
 
     private File folder;
     private String baseName;
+    private long chunkStartNs;
     private int requestedRateHz;
     private long sessionStartNs;
     private HandlerThread sensorThread;
@@ -149,13 +151,16 @@ public class FsaeLogger implements SensorEventListener {
             calibration = new Calibration(Math.max(nowNs, sessionStartNs));
         }
 
+        live.clear();
+        live.attach(this);
+        GgTracker.getInstance().reset();
         ecu = Strings.isNullOrEmpty(ecuHosts) ? null : new EcuLogger(context, ecuHosts, sessionStartNs);
         openChunk(baseName);
         if (ecu != null) {
             ecu.start();
         }
 
-        sensorThread = new HandlerThread("FsaeLogger", Process.THREAD_PRIORITY_URGENT_DISPLAY);
+        sensorThread =new HandlerThread("FsaeLogger", Process.THREAD_PRIORITY_URGENT_DISPLAY);
         sensorThread.start();
         sensorHandler = new Handler(sensorThread.getLooper());
 
@@ -196,6 +201,7 @@ public class FsaeLogger implements SensorEventListener {
         }
         closeChunk();
         ecu = null;
+        live.detach(this);
         LOG.info("FSAE logging stopped");
     }
 
@@ -210,6 +216,14 @@ public class FsaeLogger implements SensorEventListener {
             return;
         }
         lastGpsNs = ns;
+
+        int sats = loc.getExtras() != null ? loc.getExtras().getInt("satellites", -1) : -1;
+        live.gps.add(ns,
+                loc.hasSpeed() ? loc.getSpeed() : Double.NaN,
+                loc.getLatitude(),
+                loc.getLongitude(),
+                loc.hasAccuracy() ? loc.getAccuracy() : Double.NaN,
+                sats >= 0 ? sats : Double.NaN);
 
         StringBuilder sb = new StringBuilder(160);
         CsvStreamWriter.appendTime(sb, ns, sessionStartNs);
@@ -235,7 +249,6 @@ public class FsaeLogger implements SensorEventListener {
             CsvStreamWriter.appendFixed(sb, loc.getSpeedAccuracyMetersPerSecond(), 3);
         }
         sb.append(',');
-        int sats = loc.getExtras() != null ? loc.getExtras().getInt("satellites", -1) : -1;
         if (sats >= 0) sb.append(sats);
         sb.append('\n');
 
@@ -263,6 +276,11 @@ public class FsaeLogger implements SensorEventListener {
             lastGyrNs = ns;
         }
 
+        (isAccel ? live.acc : live.gyr).add(ns, event.values[0], event.values[1], event.values[2]);
+        if (isAccel) {
+            GgTracker.getInstance().addAccel(ns, event.values[0], event.values[1], event.values[2]);
+        }
+
         if (calibration != null) {
             calibration.add(isAccel, ns, event.values);
         }
@@ -285,6 +303,21 @@ public class FsaeLogger implements SensorEventListener {
         }
     }
 
+    /** Main thread, see {@link LiveTelemetry#fillStats}. */
+    void fillStats(LiveTelemetry.Stats out) {
+        out.running = isRunning();
+        out.chunkName = baseName;
+        out.sessionStartNs = sessionStartNs;
+        out.chunkStartNs = chunkStartNs;
+        out.requestedHz = requestedRateHz;
+        out.accRows = accWriter.getRows();
+        out.gyrRows = gyrWriter.getRows();
+        out.gpsRows = gpsWriter.getRows();
+        out.accDropped = accDropped.get();
+        out.gyrDropped = gyrDropped.get();
+        out.gpsDropped = gpsDropped.get();
+    }
+
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
     }
@@ -300,6 +333,7 @@ public class FsaeLogger implements SensorEventListener {
 
     private void openChunk(String newBaseName) {
         baseName = newBaseName;
+        chunkStartNs = SystemClock.elapsedRealtimeNanos();
         accDropped.set(0);
         gyrDropped.set(0);
         gpsDropped.set(0);

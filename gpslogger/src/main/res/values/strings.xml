@@ -548,6 +548,10 @@
     <string name="log_fsae_ecu_title" translatable="false">Log Speeduino via AirBear</string>
     <string name="log_fsae_ecu_summary" translatable="false">Writes a .ecu file from an AirBear in Web Dash mode (about 30 Hz). Speeduino secondary serial must be set to Generic (Fixed List).</string>
     <string name="fsae_ecu_hosts_title" translatable="false">AirBear address(es)</string>
+    <string name="fsae_mount_forward_title" translatable="false">Phone mount: which way faces the car\'s nose</string>
+    <string name="view_fsae_gg" translatable="false">FSAE G-G</string>
+    <string name="fsae_clear_uploaded_title" translatable="false">Free up phone storage</string>
+    <string name="fsae_clear_uploaded_summary" translatable="false">Delete log chunks already uploaded to Google Drive. Anything not uploaded yet is kept.</string>
     <string name="new_file_chunk_title" translatable="false">New file every</string>
     <string name="upload_chunk_now" translatable="false">Upload now</string>
 </resources>

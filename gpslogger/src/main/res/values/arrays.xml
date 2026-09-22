@@ -58,6 +58,9 @@
         <item>@string/view_big</item>
         <item>@string/view_log</item>
         <item>@string/view_annotation</item>
+        <item>@string/view_fsae_status</item>
+        <item>@string/view_fsae_charts</item>
+        <item>@string/view_fsae_gg</item>
     </string-array>
 
 
@@ -99,6 +102,22 @@
         <item>100</item>
         <item>200</item>
         <item>400</item>
+    </string-array>
+    <string-array name="mount_forward_entries" translatable="false">
+        <item>Top of phone (+y)</item>
+        <item>Bottom of phone (-y)</item>
+        <item>Right edge (+x)</item>
+        <item>Left edge (-x)</item>
+        <item>Screen (+z), phone upright facing the nose</item>
+        <item>Back (-z), phone upright facing the driver</item>
+    </string-array>
+    <string-array name="mount_forward_values" translatable="false">
+        <item>+y</item>
+        <item>-y</item>
+        <item>+x</item>
+        <item>-x</item>
+        <item>+z</item>
+        <item>-z</item>
     </string-array>
     <string-array name="chunk_minutes_entries" translatable="false">
         <item>Off (use file creation mode)</item>

@@ -43,6 +43,7 @@ public  class PreferenceNames {
     public static final String LOG_FSAE_STREAMS = "log_fsae_streams";
     public static final String LOG_FSAE_ECU = "log_fsae_ecu";
     public static final String FSAE_ECU_HOSTS = "fsae_ecu_hosts";
+    public static final String FSAE_MOUNT_FORWARD = "fsae_mount_forward";
     public static final String LOG_TO_IMU_RATE_HZ = "log_imu_rate_hz";
     public static final String NEW_FILE_CHUNK_MINUTES = "new_file_chunk_minutes";
     public static final String LOG_TO_NMEA = "log_nmea";
