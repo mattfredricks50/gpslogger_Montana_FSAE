@@ -17,6 +17,44 @@ A fork of [mendhak/gpslogger](https://github.com/mendhak/gpslogger). All FSAE wo
 | On the phone | live G-G diagram with peak g, strip charts, event markers, upload status |
 | Off the phone | 7-minute chunks zipped to Google Drive, then converted for PlotJuggler |
 
+## Why this fork exists
+
+A dedicated motorsport logger costs more than the team wants to spend on a first data system, and
+the data usually ends up locked in one vendor's software. Meanwhile every member already carries a
+phone with a 200+ Hz IMU, GPS, storage, a screen, a battery and a cellular link. This fork turns
+that phone into the car's first datalogger: something the team can run at the next test day without
+buying anything, and outgrow later without throwing the data away.
+
+What it's meant to solve:
+
+- **Know what the car did.** Braking and cornering g, yaw, speed, and what the engine was doing at
+  the same instant, so a driver's "it felt down low" can be checked against RPM, MAP, TPS and AFR.
+- **Feed tuning.** Speeduino data logged alongside the driving, so AFR and enrichment can be judged
+  against real load, not just idle in the paddock.
+- **Stop losing runs.** Data leaves the phone while you're still testing, instead of sitting on an
+  SD card until someone remembers to copy it.
+- **Be usable by whoever is holding the phone,** not just the person who wrote the code.
+
+The rules the design follows:
+
+1. **One clock.** Every stream is timestamped from the same monotonic clock, so IMU, GPS and ECU
+   data line up without guessing. This is the thing that makes the logs worth keeping.
+2. **Raw data, documented.** Nothing is smoothed, rotated or resampled before it's written. Axis
+   rotation and filtering happen in post-processing, where they can be redone differently.
+3. **Log first, look pretty second.** The logging path is a buffered writer on its own thread. The
+   live screens read from ring buffers and can't slow it down.
+4. **Assume things go wrong.** Wi-Fi drops, the ECU stalls, uploads fail, the phone gets killed.
+   Each chunk closes and uploads on its own, gaps are left as gaps, and what went wrong is recorded
+   in the chunk's `.meta` rather than being silently patched over.
+5. **Open, boring file formats.** Plain CSV that PlotJuggler, pandas or a spreadsheet can read in
+   seconds, with units in the column names.
+6. **Survive the car changing.** The ECU side is deliberately thin, so the same logger keeps working
+   when the Speeduino is swapped for a Haltech and the data comes over CAN instead.
+
+What it is **not**: a tuning tool (that's TunerStudio), a replacement for the car's dash, or a
+scrutineering-grade instrument. Treat the GPS as good for context and lap-ish timing, not for
+apex-level track position, until a faster receiver is added.
+
 ## Using it
 
 1. Install the APK. See [Building](#building), or copy `gpslogger-debug.apk` to the phone and open it.
